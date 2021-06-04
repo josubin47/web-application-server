@@ -1,15 +1,18 @@
 package util;
 
-import static org.hamcrest.CoreMatchers.*;
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.Test;
 
 import java.util.Map;
+import static org.junit.jupiter.api.Assertions.*;
 
-import org.junit.Test;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.CoreMatchers.nullValue;
 
 import util.HttpRequestUtils.Pair;
 
-public class HttpRequestUtilsTest {
+
+class HttpRequestUtilsTest {
     @Test
     public void parseQueryString() {
         String queryString = "userId=javajigi";
