@@ -12,6 +12,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import util.HttpRequestUtils;
+import util.IOUtils;
 
 public class RequestHandler extends Thread {
     private static final Logger log = LoggerFactory.getLogger(RequestHandler.class);
@@ -28,7 +29,6 @@ public class RequestHandler extends Thread {
 
         try (InputStream in = connection.getInputStream(); OutputStream out = connection.getOutputStream()) {
             // TODO 사용자 요청에 대한 처리는 이 곳에 구현하면 된다.
-
             BufferedReader buffer = new BufferedReader(new InputStreamReader(in, "UTF-8"));
 
             String line = buffer.readLine();
@@ -37,8 +37,8 @@ public class RequestHandler extends Thread {
                 return;
             }
 
-            String[] token = line.split(" ");
-            String url = token[1]; // request urL
+            String[] lineToken = line.split(" ");
+            String url = lineToken[1]; // request urL
 
             Map<String, String> params = new HashMap<>();
 
@@ -47,19 +47,17 @@ public class RequestHandler extends Thread {
             if(StringUtils.equals(url, "/")) {
                 url += "index.html";
             } else if(index != -1) {
+                //GET 방식
                 //전달된 정보가 있으면
                 params = HttpRequestUtils.parseQueryString(url.substring(index+1));
                 url = url.substring(0, index);
+
+                log.debug("[url]" + url);
+                log.debug("[params]" + params);
             }
 
-            log.debug("[url]" + url);
-            log.debug("[params]" + params);
 
-            if(StringUtils.equals(url, "/user/create")) {
-                //회원가입 정보 저장
-                User userInfo = new User(params.get("userId"), params.get("password"), params.get("name"), params.get("email"));
-                DataBase.addUser(userInfo);
-            }
+            int contentLength = 0;
 
             //아 하기싫어
             //HTTP 정보 읽어오기
@@ -67,8 +65,19 @@ public class RequestHandler extends Thread {
                 line = buffer.readLine();
                 log.debug("[line info]" + line);
 
+                if (line.contains("Content-Length")) {
+                    contentLength = Integer.parseInt(line.split(":")[1].trim());
+                }            }
 
 
+            if(StringUtils.equals(url, "/user/create")) {
+                //회원가입 정보 저장
+                String data = IOUtils.readData(buffer, contentLength);
+                params = HttpRequestUtils.parseQueryString(data);
+                User userInfo = new User(params.get("userId"), params.get("password"), params.get("name"), params.get("email"));
+                DataBase.addUser(userInfo);
+
+                url = "/index.html";
             }
 
             DataOutputStream dos = new DataOutputStream(out);
