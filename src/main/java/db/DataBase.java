@@ -6,6 +6,7 @@ import java.util.Map;
 import com.google.common.collect.Maps;
 
 import model.User;
+import org.apache.commons.lang3.StringUtils;
 
 public class DataBase {
     private static Map<String, User> users = Maps.newHashMap();
@@ -16,6 +17,11 @@ public class DataBase {
 
     public static User findUserById(String userId) {
         return users.get(userId);
+    }
+
+    public static boolean checkUserInfo(String userId, String password) {
+        User user = findUserById(userId);
+        return user != null && StringUtils.equals(password, user.getPassword());
     }
 
     public static Collection<User> findAll() {
