@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import db.DataBase;
+import enums.HttpStatus;
 import model.User;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -72,21 +73,24 @@ public class RequestHandler extends Thread {
 
             if(StringUtils.equals(url, "/user/create")) {
                 //회원가입 정보 저장
-                String data = IOUtils.readData(buffer, contentLength);
-                params = HttpRequestUtils.parseQueryString(data);
+                String body = IOUtils.readData(buffer, contentLength);
+                params = HttpRequestUtils.parseQueryString(body);
                 User userInfo = new User(params.get("userId"), params.get("password"), params.get("name"), params.get("email"));
                 DataBase.addUser(userInfo);
 
-                url = "/index.html";
+                DataOutputStream dos = new DataOutputStream(out);
+                response302Header(dos);
+            } else {
+                DataOutputStream dos = new DataOutputStream(out);
+
+                byte[] body = Files.readAllBytes(new File("./webapp" + url).toPath());
+
+                response200Header(dos, body.length);
+                responseBody(dos, body);
             }
 
-            DataOutputStream dos = new DataOutputStream(out);
-
-            byte[] body = Files.readAllBytes(new File("./webapp" + url).toPath());
-           // byte[] body = "Hello World".getBytes();
-
-            response200Header(dos, body.length);
-            responseBody(dos, body);
+            in.close();
+            out.close();
         } catch (IOException e) {
             log.error(e.getMessage());
         }
@@ -103,6 +107,44 @@ public class RequestHandler extends Thread {
             log.error(e.getMessage());
         }
     }
+
+    private void response302Header(DataOutputStream dos) {
+        try {
+            dos.writeBytes("HTTP/1.1 302 Redirect \r\n");
+            dos.writeBytes("Location: /index.html \r\n");
+            dos.writeBytes("\r\n");
+        } catch (IOException e) {
+            log.error(e.getMessage());
+        }
+    }
+
+//    private void responseHeader(DataOutputStream dos, int lengthOfBodyContent, HttpStatus statusCode) {
+//        try {
+//
+//            String statusLine = "";
+//            String location = ""; //302
+//
+//            switch (statusCode) {
+//                case OK:
+//                    statusLine = "HTTP/1.1 200 OK \r\n";
+//                    break;
+//                case MOVED_TEMPORARILY:
+//                    statusLine = "HTTP/1.1 302 Redirect \r\n";
+//                    location = "Location: /index.html \r\n";
+//                    break;
+//            }
+//
+//            dos.writeBytes(statusLine);
+//            if(!StringUtils.isEmpty(location)) {
+//                dos.writeBytes(location);
+//            }
+//            dos.writeBytes("Content-Type: text/html;charset=utf-8\r\n");
+//            dos.writeBytes("Content-Length: " + lengthOfBodyContent + "\r\n");
+//            dos.writeBytes("\r\n");
+//        } catch (IOException e) {
+//            log.error(e.getMessage());
+//        }
+//    }
 
     private void responseBody(DataOutputStream dos, byte[] body) {
         try {
